@@ -466,7 +466,7 @@ export const GlobeSolarSystem: React.FC = () => {
 
           {/* HTML Orbiting Skill Badges */}
           <div className="absolute inset-0 z-20 pointer-events-none">
-            {SKILLS_LIST.map((skill) => {
+            {skills.map((skill) => {
               const pos = screenPositions[skill.name];
               if (!pos) return null;
 

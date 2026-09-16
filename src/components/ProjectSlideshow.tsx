@@ -73,7 +73,7 @@ export const ProjectSlideshow: React.FC<ProjectSlideshowProps> = ({ onSelectProj
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-[#F97316]" />
           <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#4B5563]">
-            Featured Selected Work ({currentIndex + 1}/{PROJECTS_LIST.length})
+            Featured Selected Work ({currentIndex + 1}/{activeProjects.length})
           </span>
         </div>
         <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#F97316]/10 text-[#F97316] font-semibold">
@@ -167,7 +167,7 @@ export const ProjectSlideshow: React.FC<ProjectSlideshowProps> = ({ onSelectProj
       <div className="flex items-center justify-between pt-3 border-t border-[#F3F4F6]">
         {/* Navigation Dot Indicators */}
         <div className="flex items-center gap-1.5">
-          {PROJECTS_LIST.map((_, index) => (
+          {activeProjects.map((_, index) => (
             <button
               key={index}
               onClick={(e) => {
