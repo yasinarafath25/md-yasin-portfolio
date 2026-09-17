@@ -6,6 +6,7 @@ import { AboutServicesSection } from './components/AboutServicesSection';
 import { ProjectsSection } from './components/ProjectsSection';
 import { IdeasSection } from './components/IdeasSection';
 import { SkillsSection } from './components/SkillsSection';
+import { ResourcesSection } from './components/ResourcesSection';
 import { FooterSection } from './components/FooterSection';
 import { ShowreelModal } from './components/ShowreelModal';
 import { ContactPage } from './components/ContactPage';
@@ -128,6 +129,9 @@ export default function App() {
 
         {/* Tech Stack & Skills Section */}
         <SkillsSection />
+
+        {/* Digital Assets, Source Code & Downloads Section */}
+        <ResourcesSection />
 
         <ContactPage onSelectProject={(project) => setSelectedProject(project)} />
       </main>

@@ -79,6 +79,12 @@ export const MobileMenuDrawer: React.FC<MobileMenuDrawerProps> = ({
             >
               05. Tech Stack & Skills
             </button>
+            <button
+              onClick={() => scrollTo('resources')}
+              className="block w-full text-left text-2xl font-black text-[#1F2937] hover:text-[#F97316] transition-colors"
+            >
+              06. Downloads & Files (ZIP)
+            </button>
           </div>
 
           {/* Bottom Actions */}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Project, Skill, Idea, Booking } from '../types';
+import { Project, Skill, Idea, Booking, ResourceItem } from '../types';
 import { PROJECTS_LIST, SKILLS_LIST, PERSONAL_INFO } from '../data/portfolioData';
 import { db } from './firebase';
 import { 
@@ -13,6 +13,84 @@ import {
   query,
   orderBy
 } from 'firebase/firestore';
+
+export const DEFAULT_RESOURCES: ResourceItem[] = [
+  {
+    id: 'ecommerce-starter-bundle',
+    title: 'Full-Stack Modern E-Commerce Core (ZIP)',
+    category: 'Source Code',
+    fileType: 'zip',
+    fileSize: '42.8 MB',
+    downloadUrl: 'https://github.com/yasinarafath25/md-yasin-portfolio/archive/refs/heads/main.zip',
+    previewUrl: 'https://github.com/yasinarafath25/md-yasin-portfolio',
+    description: 'Complete production-grade E-Commerce boilerplate with cart, checkout, responsive UI, Tailwind CSS, and API integrations packaged in a clean ZIP bundle.',
+    tags: ['Next.js', 'React', 'TypeScript', 'Tailwind', 'Stripe'],
+    downloadsCount: 184,
+    featured: true,
+    version: 'v2.4.0',
+    updatedAt: '2026-03-10'
+  },
+  {
+    id: 'courier-track-app-apk',
+    title: 'Courier & Logistics Mobile App Release (APK)',
+    category: 'Apps & ZIPs',
+    fileType: 'apk',
+    fileSize: '28.4 MB',
+    downloadUrl: 'https://github.com/yasinarafath25/md-yasin-portfolio',
+    previewUrl: '',
+    description: 'Direct Android APK build for real-time parcel delivery tracking, GPS navigation, and digital signature confirmation.',
+    tags: ['Android', 'Flutter', 'APK Build', 'Google Maps'],
+    downloadsCount: 312,
+    featured: true,
+    version: 'v1.8.2',
+    updatedAt: '2026-02-18'
+  },
+  {
+    id: 'portfolio-3d-solar-template',
+    title: 'Interactive 3D Solar System Visualizer (Source ZIP)',
+    category: 'Source Code',
+    fileType: 'zip',
+    fileSize: '15.6 MB',
+    downloadUrl: 'https://github.com/yasinarafath25/md-yasin-portfolio',
+    previewUrl: 'https://md-yasin-portfolio.vercel.app',
+    description: 'Clean Three.js solar system code with custom orbital physics, glowing shaders, and responsive HTML overlays.',
+    tags: ['Three.js', 'WebGL', 'Canvas', 'TypeScript', 'ZIP'],
+    downloadsCount: 429,
+    featured: true,
+    version: 'v3.0.0',
+    updatedAt: '2026-03-15'
+  },
+  {
+    id: 'product-walkthrough-demo',
+    title: 'AI Studio & Automation Architecture Walkthrough (Video MP4)',
+    category: 'Videos & Demos',
+    fileType: 'video',
+    fileSize: '86.2 MB',
+    downloadUrl: 'https://www.youtube.com',
+    previewUrl: 'https://www.youtube.com',
+    description: 'High-definition 4K video breakdown detailing micro-service workflows, Firestore listeners, and serverless edge functions on Vercel.',
+    tags: ['Video Walkthrough', '4K MP4', 'Architecture', 'Tutorial'],
+    downloadsCount: 650,
+    featured: true,
+    version: 'HD 1080p',
+    updatedAt: '2026-01-20'
+  },
+  {
+    id: 'fullstack-dev-cheatsheet-pdf',
+    title: 'Full Stack API & Cloud Deployment Master Cheatsheet (PDF)',
+    category: 'Guides & Docs',
+    fileType: 'pdf',
+    fileSize: '4.2 MB',
+    downloadUrl: 'https://github.com/yasinarafath25/md-yasin-portfolio',
+    previewUrl: '',
+    description: 'Comprehensive 40-page technical reference covering REST/GraphQL design, Docker orchestration, Vercel CI/CD, and database indexing.',
+    tags: ['PDF Guide', 'Documentation', 'DevOps', 'Cheatsheet'],
+    downloadsCount: 890,
+    featured: false,
+    version: '2026 Edition',
+    updatedAt: '2026-02-01'
+  }
+];
 
 export const DEFAULT_IDEAS: Idea[] = [
   {
@@ -57,6 +135,7 @@ const STORAGE_KEYS = {
   PROJECTS: 'yasin_portfolio_projects',
   SKILLS: 'yasin_portfolio_skills',
   IDEAS: 'yasin_portfolio_ideas',
+  RESOURCES: 'yasin_portfolio_resources',
   PERSONAL_INFO: 'yasin_portfolio_info',
   ADMIN_PIN: 'yasin_portfolio_admin_pin',
   ADMIN_AUTH: 'yasin_portfolio_admin_auth'
@@ -84,6 +163,7 @@ const setStored = <T>(key: string, value: T) => {
 let currentProjects: Project[] = getStored(STORAGE_KEYS.PROJECTS, PROJECTS_LIST);
 let currentSkills: Skill[] = getStored(STORAGE_KEYS.SKILLS, SKILLS_LIST);
 let currentIdeas: Idea[] = getStored(STORAGE_KEYS.IDEAS, DEFAULT_IDEAS);
+let currentResources: ResourceItem[] = getStored(STORAGE_KEYS.RESOURCES, DEFAULT_RESOURCES);
 let currentPersonalInfo = getStored(STORAGE_KEYS.PERSONAL_INFO, PERSONAL_INFO);
 let currentBookings: Booking[] = [];
 
@@ -99,6 +179,7 @@ const COLLECTIONS = {
   PROJECTS: 'portfolio_projects',
   SKILLS: 'portfolio_skills',
   IDEAS: 'portfolio_ideas',
+  RESOURCES: 'portfolio_resources',
   CONFIG: 'portfolio_config',
   BOOKINGS: 'bookings'
 };
@@ -140,6 +221,16 @@ export const initFirebaseSync = () => {
       }
     }, (err) => console.log('Firestore ideas sync fallback to local:', err.message));
 
+    // Listen to resources & downloadable files
+    onSnapshot(collection(db, COLLECTIONS.RESOURCES), (snapshot) => {
+      if (!snapshot.empty) {
+        const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ResourceItem));
+        currentResources = items;
+        setStored(STORAGE_KEYS.RESOURCES, items);
+        notify();
+      }
+    }, (err) => console.log('Firestore resources sync fallback to local:', err.message));
+
     // Listen to config/personal info
     onSnapshot(doc(db, COLLECTIONS.CONFIG, 'personal_info'), (docSnap) => {
       if (docSnap.exists()) {
@@ -169,11 +260,13 @@ export const seedDefaultData = async () => {
   currentProjects = [...PROJECTS_LIST];
   currentSkills = [...SKILLS_LIST];
   currentIdeas = [...DEFAULT_IDEAS];
+  currentResources = [...DEFAULT_RESOURCES];
   currentPersonalInfo = { ...PERSONAL_INFO };
 
   setStored(STORAGE_KEYS.PROJECTS, currentProjects);
   setStored(STORAGE_KEYS.SKILLS, currentSkills);
   setStored(STORAGE_KEYS.IDEAS, currentIdeas);
+  setStored(STORAGE_KEYS.RESOURCES, currentResources);
   setStored(STORAGE_KEYS.PERSONAL_INFO, currentPersonalInfo);
   notify();
 
@@ -189,6 +282,9 @@ export const seedDefaultData = async () => {
     }
     for (const idea of currentIdeas) {
       await setDoc(doc(db, COLLECTIONS.IDEAS, idea.id), idea, { merge: true });
+    }
+    for (const res of currentResources) {
+      await setDoc(doc(db, COLLECTIONS.RESOURCES, res.id), res, { merge: true });
     }
     await setDoc(doc(db, COLLECTIONS.CONFIG, 'personal_info'), currentPersonalInfo, { merge: true });
   } catch (err) {
@@ -295,6 +391,48 @@ export const deleteIdea = async (ideaId: string) => {
   }
 };
 
+// CRUD for Resources (ZIP, Apps, Videos, Source Code, Assets)
+export const saveResource = async (resource: ResourceItem) => {
+  const index = currentResources.findIndex(r => r.id === resource.id);
+  if (index >= 0) {
+    currentResources[index] = resource;
+  } else {
+    currentResources.unshift(resource);
+  }
+  setStored(STORAGE_KEYS.RESOURCES, currentResources);
+  notify();
+
+  try {
+    await setDoc(doc(db, COLLECTIONS.RESOURCES, resource.id), resource, { merge: true });
+  } catch (err) {
+    console.warn('Firestore write resource warning:', err);
+  }
+};
+
+export const deleteResource = async (resourceId: string) => {
+  currentResources = currentResources.filter(r => r.id !== resourceId);
+  setStored(STORAGE_KEYS.RESOURCES, currentResources);
+  notify();
+
+  try {
+    await deleteDoc(doc(db, COLLECTIONS.RESOURCES, resourceId));
+  } catch (err) {
+    console.warn('Firestore delete resource warning:', err);
+  }
+};
+
+export const incrementDownloadCount = async (resourceId: string) => {
+  const target = currentResources.find(r => r.id === resourceId);
+  if (target) {
+    target.downloadsCount = (target.downloadsCount || 0) + 1;
+    setStored(STORAGE_KEYS.RESOURCES, currentResources);
+    notify();
+    try {
+      await setDoc(doc(db, COLLECTIONS.RESOURCES, resourceId), { downloadsCount: target.downloadsCount }, { merge: true });
+    } catch {}
+  }
+};
+
 // Save Personal Info
 export const savePersonalInfo = async (info: typeof PERSONAL_INFO) => {
   currentPersonalInfo = info;
@@ -368,6 +506,7 @@ export const usePortfolioStore = () => {
     projects: currentProjects,
     skills: currentSkills,
     ideas: currentIdeas,
+    resources: currentResources,
     personalInfo: currentPersonalInfo,
     bookings: currentBookings,
     isAdmin: isAdminLoggedIn(),
@@ -377,6 +516,9 @@ export const usePortfolioStore = () => {
     deleteSkill,
     saveIdea,
     deleteIdea,
+    saveResource,
+    deleteResource,
+    incrementDownloadCount,
     savePersonalInfo,
     seedDefaultData,
     checkAdminPin,

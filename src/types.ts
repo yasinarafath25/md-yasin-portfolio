@@ -52,5 +52,21 @@ export interface Booking {
   createdAt?: any;
 }
 
+export interface ResourceItem {
+  id: string;
+  title: string;
+  category: 'Apps & ZIPs' | 'Source Code' | 'Videos & Demos' | 'Media & Assets' | 'Guides & Docs';
+  fileType: 'zip' | 'apk' | 'code' | 'video' | 'image' | 'pdf' | 'other';
+  fileSize?: string;
+  downloadUrl: string;
+  previewUrl?: string;
+  description: string;
+  tags: string[];
+  downloadsCount?: number;
+  featured?: boolean;
+  version?: string;
+  updatedAt?: string;
+}
+
 export type ModalType = 'showreel' | 'schedule' | 'project' | 'services' | 'skills' | 'contact' | 'admin' | null;
 

@@ -25,10 +25,18 @@ import {
   Calendar,
   Clock,
   User,
-  MessageSquare
+  MessageSquare,
+  FileArchive,
+  Download,
+  HardDrive,
+  Smartphone,
+  Video,
+  Code2,
+  FileText,
+  Image as ImageIcon
 } from 'lucide-react';
 import { usePortfolioStore } from '../../lib/portfolioStore';
-import { Project, Skill, Idea } from '../../types';
+import { Project, Skill, Idea, ResourceItem } from '../../types';
 
 interface AdminDashboardProps {
   onClose: () => void;
@@ -39,6 +47,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
     projects,
     skills,
     ideas,
+    resources,
     personalInfo,
     bookings,
     saveProject,
@@ -47,13 +56,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
     deleteSkill,
     saveIdea,
     deleteIdea,
+    saveResource,
+    deleteResource,
     savePersonalInfo,
     seedDefaultData,
     updateAdminPin,
     setAdminLoggedIn
   } = usePortfolioStore();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'skills' | 'ideas' | 'inbox' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'skills' | 'ideas' | 'resources' | 'inbox' | 'settings'>('overview');
 
   // Project modal states
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
@@ -101,6 +112,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
     featured: true
   });
   const [ideaTagInput, setIdeaTagInput] = useState('');
+
+  // Resource modal states (ZIP, APK, Videos, Source Files)
+  const [isResourceModalOpen, setIsResourceModalOpen] = useState(false);
+  const [editingResource, setEditingResource] = useState<ResourceItem | null>(null);
+  const [resourceForm, setResourceForm] = useState<Partial<ResourceItem>>({
+    id: '',
+    title: '',
+    category: 'Apps & ZIPs',
+    fileType: 'zip',
+    fileSize: '',
+    downloadUrl: '',
+    previewUrl: '',
+    description: '',
+    tags: [],
+    downloadsCount: 0,
+    featured: true,
+    version: 'v1.0.0'
+  });
+  const [resourceTagInput, setResourceTagInput] = useState('');
+  const [resourceCategoryFilter, setResourceCategoryFilter] = useState<string>('All');
 
   // Settings states
   const [newPin, setNewPin] = useState('');
@@ -239,6 +270,53 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
     if (window.confirm(`আপনি কি "${idea.title}" আইডিয়াটি ডিলিট করতে চান?`)) {
       await deleteIdea(idea.id);
       showToast('আইডিয়া ডিলিট করা হয়েছে');
+    }
+  };
+
+  // Resource Handlers (ZIP, Apps, Videos, Source Code)
+  const handleOpenNewResource = () => {
+    setEditingResource(null);
+    setResourceForm({
+      id: 'res-' + Date.now(),
+      title: '',
+      category: 'Apps & ZIPs',
+      fileType: 'zip',
+      fileSize: '',
+      downloadUrl: '',
+      previewUrl: '',
+      description: '',
+      tags: ['ZIP', 'SourceCode'],
+      downloadsCount: 0,
+      featured: true,
+      version: 'v1.0.0',
+      updatedAt: new Date().toISOString().split('T')[0]
+    });
+    setResourceTagInput('');
+    setIsResourceModalOpen(true);
+  };
+
+  const handleEditResource = (item: ResourceItem) => {
+    setEditingResource(item);
+    setResourceForm({ ...item });
+    setResourceTagInput('');
+    setIsResourceModalOpen(true);
+  };
+
+  const handleSaveResource = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resourceForm.title || !resourceForm.downloadUrl || !resourceForm.id) {
+      showToast('দয়া করে টাইটেল ও ডাউনলোড লিঙ্ক দিন');
+      return;
+    }
+    await saveResource(resourceForm as ResourceItem);
+    setIsResourceModalOpen(false);
+    showToast(`ফাইল/রিসোর্স "${resourceForm.title}" সফলভাবে সেভ হয়েছে!`);
+  };
+
+  const handleDeleteResource = async (item: ResourceItem) => {
+    if (window.confirm(`আপনি কি "${item.title}" ফাইলটি ডিলিট করতে চান?`)) {
+      await deleteResource(item.id);
+      showToast('ফাইল ডিলিট করা হয়েছে');
     }
   };
 
@@ -396,6 +474,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
             </div>
             <span className="px-1.5 py-0.5 rounded text-[10px] bg-slate-900/60">
               {ideas.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('resources')}
+            className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-mono transition ${
+              activeTab === 'resources'
+                ? 'bg-[#F97316] text-white font-bold shadow-md shadow-[#F97316]/20'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              <FileArchive className="w-4 h-4 text-orange-400" />
+              <span>ফাইল ও রিসোর্স হাব (ZIP/Apps)</span>
+            </div>
+            <span className="px-1.5 py-0.5 rounded text-[10px] bg-slate-900/60">
+              {resources.length}
             </span>
           </button>
 
@@ -748,22 +843,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
             </div>
           )}
 
-          {/* TAB 4: IDEAS LAB MANAGER */}
+          {/* TAB 4: IDEAS LAB */}
           {activeTab === 'ideas' && (
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-2xl font-bold font-mono text-white">নতুন আইডিয়া ও ইনোভেশন ল্যাব</h2>
+                  <h2 className="text-2xl font-bold font-mono text-white">আইডিয়া ও ইনোভেশন ল্যাব</h2>
                   <p className="text-xs text-slate-400 font-mono mt-1">
-                    আপনার ভবিষ্যৎ কনসেপ্ট বা আসন্ন কোনো নতুন অ্যাপ্লিকেশন এখানে অটোমেটেড আপডেট করতে পারবেন।
+                    ভবিষ্যৎ প্রোডাক্ট, প্রোটোটাইপ এবং চলমান গবেষণা প্রদর্শন করুন।
                   </p>
                 </div>
                 <button
                   onClick={handleOpenNewIdea}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#F97316] hover:bg-[#ea580c] text-white font-mono font-bold text-xs shadow-lg shadow-[#F97316]/20 transition shrink-0"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#F97316] hover:bg-[#ea580c] text-white text-xs font-mono font-bold shadow-lg shadow-[#F97316]/20 transition"
                 >
                   <Plus className="w-4 h-4" />
-                  নতুন আইডিয়া যুক্ত করুন
+                  <span>নতুন আইডিয়া যোগ করুন</span>
                 </button>
               </div>
 
@@ -774,25 +869,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                     className="p-5 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col justify-between"
                   >
                     <div>
-                      <div className="flex items-start justify-between gap-3 mb-2">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-base font-bold font-mono text-white">{idea.title}</h3>
-                            {idea.featured && (
-                              <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                            )}
-                          </div>
-                          <span className="text-xs text-[#F97316] font-mono">{idea.category}</span>
-                        </div>
-                        <span
-                          className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase ${
-                            idea.status === 'MVP Ready'
-                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                              : idea.status === 'In Development'
-                              ? 'bg-sky-500/20 text-sky-400 border border-sky-500/40'
-                              : 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
-                          }`}
-                        >
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <span className="text-[11px] font-mono text-[#F97316] uppercase tracking-wider">
+                          {idea.category}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-amber-500/10 text-amber-400 border border-amber-500/20">
                           {idea.status}
                         </span>
                       </div>
@@ -1472,6 +1553,211 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                   <button
                     type="button"
                     onClick={() => setIsIdeaModalOpen(false)}
+                    className="px-4 py-2 rounded-xl border border-slate-700 text-xs font-mono text-slate-300 hover:bg-slate-800"
+                  >
+                    বাতিল
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 rounded-xl bg-[#F97316] hover:bg-[#ea580c] text-xs font-mono font-bold text-white shadow-lg shadow-[#F97316]/20"
+                  >
+                    সেভ করুন
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+        {/* RESOURCE MODAL (ZIP, APK, VIDEO, SOURCE CODE) */}
+        {isResourceModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative w-full max-w-2xl bg-slate-950 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl my-8"
+            >
+              <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+                <div className="flex items-center gap-2.5">
+                  <FileArchive className="w-5 h-5 text-[#F97316]" />
+                  <h3 className="text-lg font-bold font-mono text-white">
+                    {editingResource ? 'ফাইল/রিসোর্স সম্পাদনা' : 'নতুন ফাইল বা জিপ (ZIP) যোগ করুন'}
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setIsResourceModalOpen(false)}
+                  className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveResource} className="mt-6 space-y-4">
+                <div>
+                  <label className="block text-xs font-mono text-slate-300 mb-1">
+                    ফাইলের নাম / টাইটেল *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={resourceForm.title || ''}
+                    onChange={(e) => setResourceForm({ ...resourceForm, title: e.target.value })}
+                    placeholder="উদাঃ Full-Stack E-Commerce Source Code (ZIP)"
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono text-white focus:border-[#F97316] outline-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-mono text-slate-300 mb-1">ক্যাটাগরি</label>
+                    <select
+                      value={resourceForm.category || 'Apps & ZIPs'}
+                      onChange={(e) => setResourceForm({ ...resourceForm, category: e.target.value as any })}
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono text-white"
+                    >
+                      <option value="Apps & ZIPs">Apps & ZIPs</option>
+                      <option value="Source Code">Source Code</option>
+                      <option value="Videos & Demos">Videos & Demos</option>
+                      <option value="Guides & Docs">Guides & Docs</option>
+                      <option value="Media & Assets">Media & Assets</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-mono text-slate-300 mb-1">ফাইল টাইপ</label>
+                    <select
+                      value={resourceForm.fileType || 'zip'}
+                      onChange={(e) => setResourceForm({ ...resourceForm, fileType: e.target.value as any })}
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono text-white"
+                    >
+                      <option value="zip">.ZIP Archive (সোর্স ফাইল/বান্ডেল)</option>
+                      <option value="apk">.APK (Android মোবাইল অ্যাপ)</option>
+                      <option value="video">.MP4 / Video (ভিডিও ডেমো)</option>
+                      <option value="code">.CODE / Repo (সোর্স কোড)</option>
+                      <option value="pdf">.PDF (ডকুমেন্টেশন / গাইড)</option>
+                      <option value="image">.PNG / Image (ডিজাইন / ছবি)</option>
+                      <option value="other">অন্যান্য (Other)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono text-slate-300 mb-1">
+                    ডাউনলোড লিঙ্ক (Download URL) *
+                  </label>
+                  <input
+                    type="url"
+                    required
+                    value={resourceForm.downloadUrl || ''}
+                    onChange={(e) => setResourceForm({ ...resourceForm, downloadUrl: e.target.value })}
+                    placeholder="Google Drive, GitHub Release, Dropbox, বা ডিরেক্ট ফাইল লিঙ্ক..."
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono text-white focus:border-[#F97316] outline-none"
+                  />
+                  <span className="text-[10px] text-slate-500 font-mono mt-1 block">
+                    টিপস: যেকোনো গুগল ড্রাইভ বা গিটহাব রিলিজের লিঙ্ক সরাসরি পেস্ট করতে পারেন।
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-mono text-slate-300 mb-1">ফাইলের সাইজ (Size)</label>
+                    <input
+                      type="text"
+                      value={resourceForm.fileSize || ''}
+                      onChange={(e) => setResourceForm({ ...resourceForm, fileSize: e.target.value })}
+                      placeholder="উদাঃ 45.2 MB"
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-mono text-slate-300 mb-1">ভার্সন (Version)</label>
+                    <input
+                      type="text"
+                      value={resourceForm.version || ''}
+                      onChange={(e) => setResourceForm({ ...resourceForm, version: e.target.value })}
+                      placeholder="v1.0.0 / 1080p"
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-mono text-slate-300 mb-1">প্রিভিউ লিঙ্ক (যদি থাকে)</label>
+                    <input
+                      type="text"
+                      value={resourceForm.previewUrl || ''}
+                      onChange={(e) => setResourceForm({ ...resourceForm, previewUrl: e.target.value })}
+                      placeholder="https://..."
+                      className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono text-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono text-slate-300 mb-1">বিবরণ (Description)</label>
+                  <textarea
+                    rows={3}
+                    value={resourceForm.description || ''}
+                    onChange={(e) => setResourceForm({ ...resourceForm, description: e.target.value })}
+                    placeholder="এই ফাইলের মধ্যে কী কী আছে এবং কীভাবে ব্যবহার করতে হবে..."
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono text-white"
+                  />
+                </div>
+
+                {/* Tags */}
+                <div>
+                  <label className="block text-xs font-mono text-slate-300 mb-1">ট্যাগস (কমা দিয়ে লিখুন)</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={resourceTagInput}
+                      onChange={(e) => setResourceTagInput(e.target.value)}
+                      placeholder="ZIP, Next.js, APK, Video"
+                      className="flex-1 px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono text-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (resourceTagInput.trim()) {
+                          const newTags = resourceTagInput.split(',').map(t => t.trim()).filter(Boolean);
+                          setResourceForm({
+                            ...resourceForm,
+                            tags: Array.from(new Set([...(resourceForm.tags || []), ...newTags]))
+                          });
+                          setResourceTagInput('');
+                        }
+                      }}
+                      className="px-3 py-2 rounded-xl bg-slate-800 text-xs font-mono hover:bg-slate-700 text-white"
+                    >
+                      যুক্ত করুন
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {resourceForm.tags?.map((tag) => (
+                      <span
+                        key={tag}
+                        className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] font-mono flex items-center gap-1"
+                      >
+                        #{tag}
+                        <button
+                          type="button"
+                          onClick={() => setResourceForm({
+                            ...resourceForm,
+                            tags: resourceForm.tags?.filter(t => t !== tag)
+                          })}
+                          className="hover:text-rose-400"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setIsResourceModalOpen(false)}
                     className="px-4 py-2 rounded-xl border border-slate-700 text-xs font-mono text-slate-300 hover:bg-slate-800"
                   >
                     বাতিল

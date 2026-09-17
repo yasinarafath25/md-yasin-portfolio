@@ -1,5 +1,5 @@
 import React from 'react';
-import { Volume2, VolumeX, Menu, Sparkles, ArrowUpRight } from 'lucide-react';
+import { Volume2, VolumeX, Menu, Sparkles, ArrowUpRight, FileArchive } from 'lucide-react';
 import { PERSONAL_INFO } from '../data/portfolioData';
 
 interface NavbarProps {
@@ -23,8 +23,8 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="w-9 h-9 rounded-lg bg-[#F97316]/10 border border-[#F97316]/30 flex items-center justify-center text-[#F97316] group-hover:bg-[#F97316] group-hover:text-white transition-all duration-300 shadow-sm font-pixel text-xs font-bold tracking-wider shrink-0">
           MY
         </div>
-        <div className="flex flex-col leading-none">
-          <span className="text-xs font-semibold tracking-[0.2em] mb-0.5 text-[#1F2937]">
+        <div className="flex flex-col">
+          <span className="font-mono text-[10px] tracking-widest text-[#6B7280] font-semibold uppercase">
             {PERSONAL_INFO.nameLine1}
           </span>
           <span className="font-pixel text-base sm:text-lg tracking-wider text-[#F97316] font-bold group-hover:text-[#1F2937] transition-colors">
@@ -43,6 +43,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           <span>Ideas Lab</span>
         </a>
         <a href="#skills" className="hover:text-[#1F2937] transition-colors">Skills</a>
+        <a href="#resources" className="hover:text-[#F97316] transition-colors font-semibold flex items-center gap-1">
+          <FileArchive className="w-3 h-3 text-orange-500" />
+          <span>Downloads</span>
+        </a>
       </div>
 
       {/* Right Controls */}
