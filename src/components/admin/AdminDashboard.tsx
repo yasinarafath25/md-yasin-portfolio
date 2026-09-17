@@ -630,13 +630,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
               </div>
 
               {/* Stats Cards */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <div 
+                  onClick={() => setActiveTab('projects')}
+                  className="p-4 rounded-2xl bg-slate-900 border border-slate-800 hover:border-slate-700 cursor-pointer transition"
+                >
                   <div className="flex items-center justify-between text-slate-400 mb-2">
-                    <span className="text-xs font-mono">মোট প্রজেক্ট/কাজ</span>
+                    <span className="text-xs font-mono">মোট প্রজেক্ট</span>
                     <Layers className="w-4 h-4 text-[#F97316]" />
                   </div>
-                  <div className="text-3xl font-extrabold font-mono text-white">
+                  <div className="text-2xl font-extrabold font-mono text-white">
                     {projects.length}
                   </div>
                   <span className="text-[10px] text-slate-500 font-mono">
@@ -644,38 +647,63 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                   </span>
                 </div>
 
-                <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800">
+                <div 
+                  onClick={() => setActiveTab('skills')}
+                  className="p-4 rounded-2xl bg-slate-900 border border-slate-800 hover:border-slate-700 cursor-pointer transition"
+                >
                   <div className="flex items-center justify-between text-slate-400 mb-2">
                     <span className="text-xs font-mono">মোট স্কিলস</span>
                     <Cpu className="w-4 h-4 text-[#F97316]" />
                   </div>
-                  <div className="text-3xl font-extrabold font-mono text-white">
+                  <div className="text-2xl font-extrabold font-mono text-white">
                     {skills.length}
                   </div>
                   <span className="text-[10px] text-slate-500 font-mono">
-                    ৩ডি সোলার সিস্টেমে একটিভ
+                    ৩ডি সিস্টেমে একটিভ
                   </span>
                 </div>
 
-                <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800">
+                <div 
+                  onClick={() => setActiveTab('ideas')}
+                  className="p-4 rounded-2xl bg-slate-900 border border-slate-800 hover:border-slate-700 cursor-pointer transition"
+                >
                   <div className="flex items-center justify-between text-slate-400 mb-2">
-                    <span className="text-xs font-mono">নতুন আইডিয়া ও ল্যাব</span>
+                    <span className="text-xs font-mono">আইডিয়া ল্যাব</span>
                     <Lightbulb className="w-4 h-4 text-amber-400" />
                   </div>
-                  <div className="text-3xl font-extrabold font-mono text-white">
+                  <div className="text-2xl font-extrabold font-mono text-white">
                     {ideas.length}
                   </div>
                   <span className="text-[10px] text-slate-500 font-mono">
-                    আসন্ন অ্যাপস ও কনসেপ্ট
+                    আসন্ন অ্যাপস
                   </span>
                 </div>
 
-                <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800">
+                <div 
+                  onClick={() => setActiveTab('resources')}
+                  className="p-4 rounded-2xl bg-slate-900 border border-[#F97316]/30 hover:border-[#F97316] cursor-pointer transition group"
+                >
                   <div className="flex items-center justify-between text-slate-400 mb-2">
-                    <span className="text-xs font-mono">ক্লায়েন্ট ইনকোয়ারি</span>
+                    <span className="text-xs font-mono text-[#F97316] font-bold">ফাইল ও ZIP হাব</span>
+                    <FileArchive className="w-4 h-4 text-[#F97316] group-hover:scale-110 transition" />
+                  </div>
+                  <div className="text-2xl font-extrabold font-mono text-white">
+                    {resources.length}
+                  </div>
+                  <span className="text-[10px] text-orange-400 font-mono">
+                    ডাউনলোড রিসোর্স
+                  </span>
+                </div>
+
+                <div 
+                  onClick={() => setActiveTab('inbox')}
+                  className="p-4 rounded-2xl bg-slate-900 border border-slate-800 hover:border-slate-700 cursor-pointer transition col-span-2 md:col-span-1"
+                >
+                  <div className="flex items-center justify-between text-slate-400 mb-2">
+                    <span className="text-xs font-mono">ইনকোয়ারি</span>
                     <Mail className="w-4 h-4 text-emerald-400" />
                   </div>
-                  <div className="text-3xl font-extrabold font-mono text-white">
+                  <div className="text-2xl font-extrabold font-mono text-white">
                     {bookings.length}
                   </div>
                   <span className="text-[10px] text-emerald-500 font-mono">
@@ -691,7 +719,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                   কুইক অ্যাকশন (Quick Actions)
                 </h3>
                 <p className="text-xs text-slate-400 font-mono mb-4">
-                  একটি ক্লিকে নতুন কাজ সম্পন্ন হওয়া অ্যাপ, স্কিল বা নতুন আইডিয়া যোগ করুন।
+                  একটি ক্লিকে নতুন কাজ, স্কিল, ফাইল/জিপ বা নতুন আইডিয়া যোগ করুন।
                 </p>
                 <div className="flex flex-wrap gap-3">
                   <button
@@ -699,21 +727,31 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                     className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#F97316] hover:bg-[#ea580c] text-white font-mono font-bold text-xs shadow-lg shadow-[#F97316]/20 transition"
                   >
                     <Plus className="w-4 h-4" />
-                    নতুন প্রজেক্ট/অ্যাপ যোগ করুন
+                    নতুন প্রজেক্ট/অ্যাপ
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveTab('resources');
+                      handleOpenNewResource();
+                    }}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-orange-500/20 hover:bg-orange-500/30 text-orange-300 font-mono font-bold text-xs border border-orange-500/40 shadow-lg shadow-orange-500/10 transition"
+                  >
+                    <Upload className="w-4 h-4 text-[#F97316]" />
+                    ফাইল / সোর্স কোড আপলোড
                   </button>
                   <button
                     onClick={handleOpenNewSkill}
                     className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-mono text-xs border border-slate-700 transition"
                   >
                     <Plus className="w-4 h-4" />
-                    নতুন স্কিল যোগ করুন
+                    নতুন স্কিল
                   </button>
                   <button
                     onClick={handleOpenNewIdea}
                     className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-mono text-xs border border-amber-500/30 transition"
                   >
                     <Lightbulb className="w-4 h-4" />
-                    নতুন আইডিয়া / অ্যাপ যোগ করুন
+                    নতুন আইডিয়া
                   </button>
                 </div>
               </div>
@@ -1017,7 +1055,174 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
             </div>
           )}
 
-          {/* TAB 5: INBOX / BOOKINGS */}
+          {/* TAB 5: RESOURCES & FILE UPLOADS (ZIP, APK, CODE, MEDIA) */}
+          {activeTab === 'resources' && (
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold font-mono text-white flex items-center gap-2">
+                    <FileArchive className="w-6 h-6 text-[#F97316]" />
+                    ফাইল ও রিসোর্স হাব (ZIP, APK, Code)
+                  </h2>
+                  <p className="text-xs text-slate-400 font-mono mt-1">
+                    আপনার তৈরি করা অ্যাপস (APK), সোর্স কোড ZIP, ভিডিও বা ডকুমেন্ট আপলোড ও ম্যানেজ করুন।
+                  </p>
+                </div>
+                <button
+                  onClick={handleOpenNewResource}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#F97316] hover:bg-[#ea580c] text-white text-xs font-mono font-bold shadow-lg shadow-[#F97316]/20 transition"
+                >
+                  <Upload className="w-4 h-4" />
+                  <span>+ নতুন ফাইল / সোর্স কোড আপলোড করুন</span>
+                </button>
+              </div>
+
+              {/* Security Banner */}
+              <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-3">
+                <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                <div className="text-xs font-mono">
+                  <span className="font-bold text-emerald-300">সিকিউরিটি সুরক্ষা সক্রিয়: </span>
+                  <span className="text-slate-300">
+                    আপনার পোর্টফোলিও ওয়েবসাইটের মূল রিপোজিটরি ও সোর্স কোড সম্পূর্ণ লকড এবং সুরক্ষিত রয়েছে। 
+                    আপনি নিচে ফাইল ড্রপ বা আপলোড করে যেসব রিসোর্স সেভ করবেন, শুধুমাত্র সেই ফাইলগুলোই পাবলিক ভিজিটররা ডাউনলোড করতে পারবে।
+                  </span>
+                </div>
+              </div>
+
+              {/* Resources List */}
+              {resources.length === 0 ? (
+                <div className="p-12 text-center rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+                  <div className="w-16 h-16 rounded-2xl bg-slate-800 flex items-center justify-center mx-auto text-slate-500">
+                    <FileUp className="w-8 h-8 text-[#F97316]" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold font-mono text-white">এখনও কোনো ফাইল আপলোড করা হয়নি</h3>
+                    <p className="text-xs font-mono text-slate-400 max-w-md mx-auto mt-1">
+                      আপনার নিজস্ব প্রোজেক্টের সোর্স কোড ZIP, মোবাইল অ্যাপ (APK), বা যেকোনো ফাইল আপলোড করুন। 
+                      পাবলিক ভিজিটররা আপনার পোর্টফোলিওর "রিসোর্স হাব" সেকশন থেকে সেগুলো ডাউনলোড করতে পারবে।
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleOpenNewResource}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#F97316] hover:bg-[#ea580c] text-white text-xs font-mono font-bold shadow-lg shadow-[#F97316]/20 transition"
+                  >
+                    <Upload className="w-4 h-4" />
+                    <span>প্রথম ফাইল আপলোড করুন</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {resources.map((item) => {
+                    const getIcon = () => {
+                      switch (item.fileType) {
+                        case 'apk': return <Smartphone className="w-5 h-5 text-emerald-400" />;
+                        case 'video': return <Video className="w-5 h-5 text-sky-400" />;
+                        case 'code': return <Code2 className="w-5 h-5 text-amber-400" />;
+                        case 'pdf': return <FileText className="w-5 h-5 text-rose-400" />;
+                        case 'image': return <ImageIcon className="w-5 h-5 text-purple-400" />;
+                        default: return <FileArchive className="w-5 h-5 text-[#F97316]" />;
+                      }
+                    };
+
+                    return (
+                      <div
+                        key={item.id}
+                        className="p-5 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col justify-between hover:border-slate-700 transition"
+                      >
+                        <div>
+                          <div className="flex items-start justify-between gap-3 mb-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center shrink-0 border border-slate-700">
+                                {getIcon()}
+                              </div>
+                              <div>
+                                <h3 className="text-sm font-bold font-mono text-white line-clamp-1">{item.title}</h3>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-slate-800 text-[#F97316] border border-slate-700">
+                                    {item.fileType.toUpperCase()}
+                                  </span>
+                                  {item.fileSize && (
+                                    <span className="text-[10px] font-mono text-slate-400">
+                                      {item.fileSize}
+                                    </span>
+                                  )}
+                                  {item.version && (
+                                    <span className="text-[10px] font-mono text-slate-500">
+                                      {item.version}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 whitespace-nowrap">
+                              {item.downloadsCount || 0} DL
+                            </span>
+                          </div>
+
+                          {item.description && (
+                            <p className="text-xs text-slate-300 font-sans mb-3 line-clamp-2">
+                              {item.description}
+                            </p>
+                          )}
+
+                          <div className="p-2 rounded-lg bg-slate-800/80 border border-slate-700/60 mb-3 text-[11px] font-mono text-slate-400 break-all flex items-center justify-between gap-2">
+                            <span className="line-clamp-1 text-slate-300">{item.downloadUrl}</span>
+                            <a
+                              href={item.downloadUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[#F97316] hover:text-white shrink-0 p-1"
+                              title="টেস্ট লিঙ্ক ওপেন করুন"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </a>
+                          </div>
+
+                          {item.tags && item.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 mb-4">
+                              {item.tags.map((t) => (
+                                <span
+                                  key={t}
+                                  className="px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 text-[10px] font-mono"
+                                >
+                                  #{t}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
+                          <span className="text-[10px] font-mono text-slate-500">
+                            ক্যাটাগরি: {item.category}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleEditResource(item)}
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono transition"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                              <span>এডিট</span>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteResource(item)}
+                              className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 transition"
+                              title="ডিলিট"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 6: INBOX / BOOKINGS */}
           {activeTab === 'inbox' && (
             <div className="space-y-6">
               <div>
