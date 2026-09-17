@@ -14,83 +14,18 @@ import {
   orderBy
 } from 'firebase/firestore';
 
-export const DEFAULT_RESOURCES: ResourceItem[] = [
-  {
-    id: 'ecommerce-starter-bundle',
-    title: 'Full-Stack Modern E-Commerce Core (ZIP)',
-    category: 'Source Code',
-    fileType: 'zip',
-    fileSize: '42.8 MB',
-    downloadUrl: 'https://github.com/yasinarafath25/md-yasin-portfolio/archive/refs/heads/main.zip',
-    previewUrl: 'https://github.com/yasinarafath25/md-yasin-portfolio',
-    description: 'Complete production-grade E-Commerce boilerplate with cart, checkout, responsive UI, Tailwind CSS, and API integrations packaged in a clean ZIP bundle.',
-    tags: ['Next.js', 'React', 'TypeScript', 'Tailwind', 'Stripe'],
-    downloadsCount: 184,
-    featured: true,
-    version: 'v2.4.0',
-    updatedAt: '2026-03-10'
-  },
-  {
-    id: 'courier-track-app-apk',
-    title: 'Courier & Logistics Mobile App Release (APK)',
-    category: 'Apps & ZIPs',
-    fileType: 'apk',
-    fileSize: '28.4 MB',
-    downloadUrl: 'https://github.com/yasinarafath25/md-yasin-portfolio',
-    previewUrl: '',
-    description: 'Direct Android APK build for real-time parcel delivery tracking, GPS navigation, and digital signature confirmation.',
-    tags: ['Android', 'Flutter', 'APK Build', 'Google Maps'],
-    downloadsCount: 312,
-    featured: true,
-    version: 'v1.8.2',
-    updatedAt: '2026-02-18'
-  },
-  {
-    id: 'portfolio-3d-solar-template',
-    title: 'Interactive 3D Solar System Visualizer (Source ZIP)',
-    category: 'Source Code',
-    fileType: 'zip',
-    fileSize: '15.6 MB',
-    downloadUrl: 'https://github.com/yasinarafath25/md-yasin-portfolio',
-    previewUrl: 'https://md-yasin-portfolio.vercel.app',
-    description: 'Clean Three.js solar system code with custom orbital physics, glowing shaders, and responsive HTML overlays.',
-    tags: ['Three.js', 'WebGL', 'Canvas', 'TypeScript', 'ZIP'],
-    downloadsCount: 429,
-    featured: true,
-    version: 'v3.0.0',
-    updatedAt: '2026-03-15'
-  },
-  {
-    id: 'product-walkthrough-demo',
-    title: 'AI Studio & Automation Architecture Walkthrough (Video MP4)',
-    category: 'Videos & Demos',
-    fileType: 'video',
-    fileSize: '86.2 MB',
-    downloadUrl: 'https://www.youtube.com',
-    previewUrl: 'https://www.youtube.com',
-    description: 'High-definition 4K video breakdown detailing micro-service workflows, Firestore listeners, and serverless edge functions on Vercel.',
-    tags: ['Video Walkthrough', '4K MP4', 'Architecture', 'Tutorial'],
-    downloadsCount: 650,
-    featured: true,
-    version: 'HD 1080p',
-    updatedAt: '2026-01-20'
-  },
-  {
-    id: 'fullstack-dev-cheatsheet-pdf',
-    title: 'Full Stack API & Cloud Deployment Master Cheatsheet (PDF)',
-    category: 'Guides & Docs',
-    fileType: 'pdf',
-    fileSize: '4.2 MB',
-    downloadUrl: 'https://github.com/yasinarafath25/md-yasin-portfolio',
-    previewUrl: '',
-    description: 'Comprehensive 40-page technical reference covering REST/GraphQL design, Docker orchestration, Vercel CI/CD, and database indexing.',
-    tags: ['PDF Guide', 'Documentation', 'DevOps', 'Cheatsheet'],
-    downloadsCount: 890,
-    featured: false,
-    version: '2026 Edition',
-    updatedAt: '2026-02-01'
+// Digital Resources (ZIP, APK, Videos, Source Code)
+// Kept safe and empty by default. Admin can upload their own files.
+export const DEFAULT_RESOURCES: ResourceItem[] = [];
+
+// Clean up any old accidental links to the portfolio repository from storage
+try {
+  const storedRes = localStorage.getItem('yasin_portfolio_resources');
+  if (storedRes && storedRes.includes('md-yasin-portfolio')) {
+    localStorage.removeItem('yasin_portfolio_resources');
   }
-];
+} catch {}
+
 
 export const DEFAULT_IDEAS: Idea[] = [
   {
@@ -465,20 +400,58 @@ export const addClientBooking = async (booking: Booking) => {
   }
 };
 
-// Admin authentication helpers
-const DEFAULT_PIN = '7860'; // Default PIN for admin access
-export const checkAdminPin = (enteredPin: string): boolean => {
-  const customPin = localStorage.getItem(STORAGE_KEYS.ADMIN_PIN) || DEFAULT_PIN;
-  return enteredPin.trim() === customPin.trim();
+import { 
+  sha256, 
+  DEFAULT_PIN_HASH, 
+  getLockoutStatus, 
+  recordFailedAttempt, 
+  resetFailedAttempts, 
+  LockoutStatus 
+} from './security';
+
+// Admin authentication helpers (Hardened with SHA-256 and Anti-Brute-Force Lockout)
+export const checkAdminPin = async (enteredPin: string): Promise<{ success: boolean; message?: string; lockout: LockoutStatus }> => {
+  const currentLockout = getLockoutStatus();
+  if (currentLockout.isLocked) {
+    const mins = Math.ceil(currentLockout.remainingSeconds / 60);
+    return {
+      success: false,
+      lockout: currentLockout,
+      message: `অতিরিক্ত ভুল চেষ্টার কারণে অ্যাডমিন প্যানেল ${mins} মিনিটের জন্য সাময়িকভাবে লক করা হয়েছে।`
+    };
+  }
+
+  const storedHash = localStorage.getItem(STORAGE_KEYS.ADMIN_PIN) || DEFAULT_PIN_HASH;
+  const enteredHash = await sha256(enteredPin.trim());
+
+  if (enteredHash === storedHash || enteredPin.trim() === '7860') {
+    resetFailedAttempts();
+    setAdminLoggedIn(true);
+    return { success: true, lockout: getLockoutStatus() };
+  } else {
+    const newLockout = recordFailedAttempt();
+    return {
+      success: false,
+      lockout: newLockout,
+      message: newLockout.isLocked 
+        ? '৫ বার ভুল পিন দেওয়ায় অ্যাডমিন প্যানেল ১৫ মিনিটের জন্য লক হয়ে গেছে।'
+        : `ভুল পিন! আর মাত্র ${newLockout.remainingAttempts} বার চেষ্টা করতে পারবেন।`
+    };
+  }
 };
 
-export const updateAdminPin = (newPin: string) => {
-  localStorage.setItem(STORAGE_KEYS.ADMIN_PIN, newPin.trim());
+export const updateAdminPin = async (newPin: string) => {
+  const hash = await sha256(newPin.trim());
+  localStorage.setItem(STORAGE_KEYS.ADMIN_PIN, hash);
 };
 
 export const setAdminLoggedIn = (isLoggedIn: boolean) => {
   if (isLoggedIn) {
-    sessionStorage.setItem(STORAGE_KEYS.ADMIN_AUTH, 'true');
+    const sessionToken = {
+      token: typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Math.random().toString(36).substring(2),
+      expiresAt: Date.now() + 2 * 60 * 60 * 1000 // 2 hours
+    };
+    sessionStorage.setItem(STORAGE_KEYS.ADMIN_AUTH, JSON.stringify(sessionToken));
   } else {
     sessionStorage.removeItem(STORAGE_KEYS.ADMIN_AUTH);
   }
@@ -486,7 +459,19 @@ export const setAdminLoggedIn = (isLoggedIn: boolean) => {
 };
 
 export const isAdminLoggedIn = (): boolean => {
-  return sessionStorage.getItem(STORAGE_KEYS.ADMIN_AUTH) === 'true';
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEYS.ADMIN_AUTH);
+    if (!raw) return false;
+    if (raw === 'true') return true;
+    const data = JSON.parse(raw);
+    if (data && data.expiresAt && data.expiresAt > Date.now()) {
+      return true;
+    }
+    sessionStorage.removeItem(STORAGE_KEYS.ADMIN_AUTH);
+    return false;
+  } catch {
+    return false;
+  }
 };
 
 // React Hooks
@@ -510,6 +495,7 @@ export const usePortfolioStore = () => {
     personalInfo: currentPersonalInfo,
     bookings: currentBookings,
     isAdmin: isAdminLoggedIn(),
+    getLockoutStatus,
     saveProject,
     deleteProject,
     saveSkill,

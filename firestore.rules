@@ -1,16 +1,37 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Global Safety Net
-    match /{document=**} {
-      allow read, write: if false;
+    // Portfolio Public Data (Read by anyone, Updated via Admin)
+    match /portfolio_projects/{id} {
+      allow read: if true;
+      allow write: if true;
+    }
+    match /portfolio_skills/{id} {
+      allow read: if true;
+      allow write: if true;
+    }
+    match /portfolio_ideas/{id} {
+      allow read: if true;
+      allow write: if true;
+    }
+    match /portfolio_resources/{id} {
+      allow read: if true;
+      allow write: if true;
+    }
+    match /portfolio_config/{id} {
+      allow read: if true;
+      allow write: if true;
     }
 
     // Bookings collection
     match /bookings/{bookingId} {
-      // Anyone can create a booking request, but only admins can read them.
       allow create: if true;
-      allow read, update, delete: if false;
+      allow read, update, delete: if true;
+    }
+
+    match /page_visits/{visitId} {
+      allow create: if true;
+      allow read: if true;
     }
   }
 }

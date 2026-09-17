@@ -18,22 +18,25 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({ isOpen, onClos
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      if (checkAdminPin(pin)) {
-        setAdminLoggedIn(true);
+    try {
+      const result = await checkAdminPin(pin);
+      if (result.success) {
         setIsSubmitting(false);
         setPin('');
         onSuccess();
       } else {
-        setError('ভুল সিকিউরিটি পিন! ডিফল্ট পিন হলো: 7860');
+        setError(result.message || 'ভুল সিকিউরিটি পিন! ডিফল্ট পিন হলো: 7860');
         setIsSubmitting(false);
       }
-    }, 300);
+    } catch {
+      setError('যাচাই করার সময় ত্রুটি ঘটেছে। পুনরায় চেষ্টা করুন।');
+      setIsSubmitting(false);
+    }
   };
 
   return (

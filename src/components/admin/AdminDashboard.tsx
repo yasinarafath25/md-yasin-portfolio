@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   LayoutDashboard,
@@ -33,10 +33,14 @@ import {
   Video,
   Code2,
   FileText,
-  Image as ImageIcon
+  Image as ImageIcon,
+  FileUp,
+  Upload
 } from 'lucide-react';
 import { usePortfolioStore } from '../../lib/portfolioStore';
 import { Project, Skill, Idea, ResourceItem } from '../../types';
+import { storage } from '../../lib/firebase';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
 interface AdminDashboardProps {
   onClose: () => void;
@@ -132,6 +136,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
   });
   const [resourceTagInput, setResourceTagInput] = useState('');
   const [resourceCategoryFilter, setResourceCategoryFilter] = useState<string>('All');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Settings states
   const [newPin, setNewPin] = useState('');
@@ -276,6 +284,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
   // Resource Handlers (ZIP, Apps, Videos, Source Code)
   const handleOpenNewResource = () => {
     setEditingResource(null);
+    setSelectedFile(null);
+    setUploadProgress(null);
+    setIsUploading(false);
     setResourceForm({
       id: 'res-' + Date.now(),
       title: '',
@@ -285,7 +296,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
       downloadUrl: '',
       previewUrl: '',
       description: '',
-      tags: ['ZIP', 'SourceCode'],
+      tags: ['ZIP', 'App'],
       downloadsCount: 0,
       featured: true,
       version: 'v1.0.0',
@@ -297,9 +308,89 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
 
   const handleEditResource = (item: ResourceItem) => {
     setEditingResource(item);
+    setSelectedFile(null);
+    setUploadProgress(null);
+    setIsUploading(false);
     setResourceForm({ ...item });
     setResourceTagInput('');
     setIsResourceModalOpen(true);
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setSelectedFile(file);
+    const sizeMB = file.size > 1024 * 1024 
+      ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
+      : (file.size / 1024).toFixed(0) + ' KB';
+    
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+
+    let detectedType: ResourceItem['fileType'] = 'other';
+    let detectedCategory: ResourceItem['category'] = 'Apps & ZIPs';
+
+    if (['zip', 'rar', 'tar', 'gz', '7z'].includes(ext)) {
+      detectedType = 'zip';
+      detectedCategory = 'Apps & ZIPs';
+    } else if (ext === 'apk') {
+      detectedType = 'apk';
+      detectedCategory = 'Apps & ZIPs';
+    } else if (['mp4', 'mov', 'webm', 'mkv'].includes(ext)) {
+      detectedType = 'video';
+      detectedCategory = 'Videos & Demos';
+    } else if (['js', 'ts', 'jsx', 'tsx', 'py', 'php', 'json', 'html', 'css'].includes(ext)) {
+      detectedType = 'code';
+      detectedCategory = 'Source Code';
+    } else if (ext === 'pdf') {
+      detectedType = 'pdf';
+      detectedCategory = 'Guides & Docs';
+    } else if (['png', 'jpg', 'jpeg', 'webp', 'svg'].includes(ext)) {
+      detectedType = 'image';
+      detectedCategory = 'Media & Assets';
+    }
+
+    setResourceForm(prev => ({
+      ...prev,
+      title: prev.title || file.name.replace(/\.[^/.]+$/, ""),
+      fileSize: sizeMB,
+      fileType: detectedType,
+      category: detectedCategory
+    }));
+
+    // Upload to Firebase Storage or generate object URL
+    try {
+      setIsUploading(true);
+      setUploadProgress(10);
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const storageRef = ref(storage, `resources/${Date.now()}_${safeName}`);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+
+      uploadTask.on(
+        'state_changed',
+        (snapshot) => {
+          const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+          setUploadProgress(progress);
+        },
+        (error) => {
+          console.warn('Storage upload fallback:', error.message);
+          setIsUploading(false);
+          setUploadProgress(null);
+          showToast('ফাইল সিলেক্টেড! সরাসরি ক্লাউড লিঙ্ক (Drive/Dropbox/MediaFire) পেস্ট করুন।');
+        },
+        async () => {
+          const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+          setResourceForm(prev => ({ ...prev, downloadUrl }));
+          setIsUploading(false);
+          setUploadProgress(100);
+          showToast('ফাইল সফলভাবে ক্লাউডে আপলোড হয়েছে!');
+        }
+      );
+    } catch (err) {
+      console.warn('Storage upload exception:', err);
+      setIsUploading(false);
+      setUploadProgress(null);
+    }
   };
 
   const handleSaveResource = async (e: React.FormEvent) => {
@@ -1593,6 +1684,67 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
               </div>
 
               <form onSubmit={handleSaveResource} className="mt-6 space-y-4">
+                {/* DIRECT FILE UPLOAD DROPZONE */}
+                <div className="p-5 rounded-2xl bg-slate-900/90 border-2 border-dashed border-slate-700 hover:border-[#F97316] transition text-center">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    accept=".zip,.apk,.rar,.tar,.gz,.7z,.mp4,.mov,.webm,.pdf,.png,.jpg,.jpeg,.json,.txt"
+                  />
+                  <div 
+                    className="flex flex-col items-center justify-center gap-2 cursor-pointer" 
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-[#F97316]/10 border border-[#F97316]/20 flex items-center justify-center text-[#F97316]">
+                      <FileUp className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-mono font-bold text-white">
+                        ডিভাইস থেকে ফাইল নির্বাচন করুন (বা ড্র্যাগ করুন)
+                      </p>
+                      <p className="text-[11px] text-slate-400 font-mono mt-0.5">
+                        সাপোর্টেড: .ZIP, .APK, .MP4, .PDF, .PNG, .RAR, সোর্স কোড
+                      </p>
+                    </div>
+                  </div>
+
+                  {selectedFile && (
+                    <div className="mt-3 p-3 rounded-xl bg-slate-800/90 border border-slate-700 flex items-center justify-between text-left">
+                      <div className="flex items-center gap-2.5 overflow-hidden">
+                        <FileArchive className="w-5 h-5 text-emerald-400 shrink-0" />
+                        <div className="truncate">
+                          <p className="text-xs font-mono font-bold text-white truncate">{selectedFile.name}</p>
+                          <p className="text-[10px] font-mono text-slate-400">
+                            {selectedFile.size > 1024 * 1024 
+                              ? (selectedFile.size / (1024 * 1024)).toFixed(1) + ' MB'
+                              : (selectedFile.size / 1024).toFixed(0) + ' KB'}
+                          </p>
+                        </div>
+                      </div>
+                      {isUploading ? (
+                        <span className="text-xs font-mono text-[#F97316] animate-pulse">
+                          আপলোড হচ্ছে {uploadProgress || 0}%...
+                        </span>
+                      ) : (
+                        <span className="text-xs font-mono text-emerald-400 font-bold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                          ফাইল সিলেক্টেড ✓
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {uploadProgress !== null && isUploading && (
+                    <div className="w-full bg-slate-800 rounded-full h-2 mt-3 overflow-hidden">
+                      <div 
+                        className="bg-[#F97316] h-2 transition-all duration-300 rounded-full" 
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
+
                 <div>
                   <label className="block text-xs font-mono text-slate-300 mb-1">
                     ফাইলের নাম / টাইটেল *
@@ -1602,7 +1754,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                     required
                     value={resourceForm.title || ''}
                     onChange={(e) => setResourceForm({ ...resourceForm, title: e.target.value })}
-                    placeholder="উদাঃ Full-Stack E-Commerce Source Code (ZIP)"
+                    placeholder="উদাঃ My Custom App Source Code (ZIP)"
                     className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono text-white focus:border-[#F97316] outline-none"
                   />
                 </div>
